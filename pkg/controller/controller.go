@@ -797,7 +797,6 @@ func (p *csiProvisioner) Provision(ctx context.Context, options controller.Provi
 	if rep.Volume != nil {
 		klog.V(3).Infof("create volume rep: %+v", *rep.Volume)
 	}
-
 	volumeAttributes := map[string]string{provisionerIDKey: p.identity}
 	for k, v := range rep.Volume.VolumeContext {
 		volumeAttributes[k] = v
