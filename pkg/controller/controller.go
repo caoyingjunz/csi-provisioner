@@ -845,6 +845,12 @@ func (p *csiProvisioner) Provision(ctx context.Context, options controller.Provi
 	result.csiPVSource.VolumeHandle = p.volumeIdToHandle(rep.Volume.VolumeId)
 	result.csiPVSource.VolumeAttributes = volumeAttributes
 	result.csiPVSource.ReadOnly = pvReadOnly
+
+	localPath := volumeAttributes["localPath.caoyingjunz.io"]
+	if len(localPath) == 0 {
+		return nil, state, fmt.Errorf("local path volume missing")
+	}
+
 	pv := &v1.PersistentVolume{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: pvName,
@@ -857,7 +863,10 @@ func (p *csiProvisioner) Provision(ctx context.Context, options controller.Provi
 			},
 			// TODO wait for CSI VolumeSource API
 			PersistentVolumeSource: v1.PersistentVolumeSource{
-				CSI: result.csiPVSource,
+				//CSI: result.csiPVSource,
+				Local: &v1.LocalVolumeSource{
+					Path: localPath,
+				},
 			},
 		},
 	}
@@ -884,12 +893,7 @@ func (p *csiProvisioner) Provision(ctx context.Context, options controller.Provi
 	if options.PVC.Spec.VolumeMode != nil {
 		pv.Spec.VolumeMode = options.PVC.Spec.VolumeMode
 	}
-	// Set FSType if PV is not Block Volume
-	if !util.CheckPersistentVolumeClaimModeBlock(options.PVC) {
-		pv.Spec.PersistentVolumeSource.CSI.FSType = result.fsType
-	}
-
-	klog.V(2).Infof("successfully created PV %v for PVC %v and csi volume name %v", pv.Name, options.PVC.Name, pv.Spec.CSI.VolumeHandle)
+	klog.V(2).Infof("successfully created PV %v for PVC %v and hostPath volume name %v", pv.Name, options.PVC.Name, pv.Spec.Local.Path)
 
 	if result.migratedVolume {
 		pv, err = p.translator.TranslateCSIPVToInTree(pv)
