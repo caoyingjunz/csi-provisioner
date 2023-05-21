@@ -848,7 +848,7 @@ func (p *csiProvisioner) Provision(ctx context.Context, options controller.Provi
 
 	localPath := volumeAttributes["localPath.caoyingjunz.io"]
 	if len(localPath) == 0 {
-		return nil, state, fmt.Errorf("failed to parse locaPath")
+		return nil, state, fmt.Errorf("local path volume missing")
 	}
 
 	pv := &v1.PersistentVolume{
