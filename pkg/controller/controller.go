@@ -846,6 +846,12 @@ func (p *csiProvisioner) Provision(ctx context.Context, options controller.Provi
 	result.csiPVSource.VolumeHandle = p.volumeIdToHandle(rep.Volume.VolumeId)
 	result.csiPVSource.VolumeAttributes = volumeAttributes
 	result.csiPVSource.ReadOnly = pvReadOnly
+
+	localPath := volumeAttributes["localPath.caoyingjunz.io"]
+	if len(localPath) == 0 {
+		return nil, state, fmt.Errorf("failed to parse locaPath")
+	}
+
 	pv := &v1.PersistentVolume{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: pvName,
@@ -860,7 +866,7 @@ func (p *csiProvisioner) Provision(ctx context.Context, options controller.Provi
 			PersistentVolumeSource: v1.PersistentVolumeSource{
 				//CSI: result.csiPVSource,
 				Local: &v1.LocalVolumeSource{
-					Path: volumeAttributes["localPath.caoyingjunz.io"],
+					Path: localPath,
 				},
 			},
 		},
