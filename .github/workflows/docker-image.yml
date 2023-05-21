@@ -17,5 +17,5 @@ jobs:
           username: ${{ secrets.DOCKER_NAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build and push the pixiu image
+      - name: Build and push csi-provisioner image
         run: make image && make push
