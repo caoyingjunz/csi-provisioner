@@ -77,6 +77,8 @@ const (
 
 	prefixedFsTypeKey = csiParameterPrefix + "fstype"
 
+	nodeKey = "kubernetes.io/hostname"
+
 	prefixedDefaultSecretNameKey      = csiParameterPrefix + "secret-name"
 	prefixedDefaultSecretNamespaceKey = csiParameterPrefix + "secret-namespace"
 
@@ -851,6 +853,9 @@ func (p *csiProvisioner) Provision(ctx context.Context, options controller.Provi
 		return nil, state, fmt.Errorf("local path volume missing")
 	}
 
+	// checkNode 已检验, selectedNode 不会为空
+	selectedNode := claim.Annotations[annSelectedNode]
+
 	pv := &v1.PersistentVolume{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: pvName,
@@ -866,6 +871,23 @@ func (p *csiProvisioner) Provision(ctx context.Context, options controller.Provi
 				//CSI: result.csiPVSource,
 				Local: &v1.LocalVolumeSource{
 					Path: localPath,
+				},
+			},
+			NodeAffinity: &v1.VolumeNodeAffinity{
+				Required: &v1.NodeSelector{
+					NodeSelectorTerms: []v1.NodeSelectorTerm{
+						{
+							MatchExpressions: []v1.NodeSelectorRequirement{
+								{
+									Key:      nodeKey,
+									Operator: v1.NodeSelectorOpIn,
+									Values: []string{
+										selectedNode,
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 		},
