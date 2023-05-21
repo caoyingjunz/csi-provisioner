@@ -797,6 +797,7 @@ func (p *csiProvisioner) Provision(ctx context.Context, options controller.Provi
 	if rep.Volume != nil {
 		klog.V(3).Infof("create volume rep: %+v", *rep.Volume)
 	}
+
 	volumeAttributes := map[string]string{provisionerIDKey: p.identity}
 	for k, v := range rep.Volume.VolumeContext {
 		volumeAttributes[k] = v
@@ -857,7 +858,10 @@ func (p *csiProvisioner) Provision(ctx context.Context, options controller.Provi
 			},
 			// TODO wait for CSI VolumeSource API
 			PersistentVolumeSource: v1.PersistentVolumeSource{
-				CSI: result.csiPVSource,
+				//CSI: result.csiPVSource,
+				Local: &v1.LocalVolumeSource{
+					Path: volumeAttributes["localPath.caoyingjunz.io"],
+				},
 			},
 		},
 	}
@@ -884,12 +888,7 @@ func (p *csiProvisioner) Provision(ctx context.Context, options controller.Provi
 	if options.PVC.Spec.VolumeMode != nil {
 		pv.Spec.VolumeMode = options.PVC.Spec.VolumeMode
 	}
-	// Set FSType if PV is not Block Volume
-	if !util.CheckPersistentVolumeClaimModeBlock(options.PVC) {
-		pv.Spec.PersistentVolumeSource.CSI.FSType = result.fsType
-	}
-
-	klog.V(2).Infof("successfully created PV %v for PVC %v and csi volume name %v", pv.Name, options.PVC.Name, pv.Spec.CSI.VolumeHandle)
+	klog.V(2).Infof("successfully created PV %v for PVC %v and hostPath volume name %v", pv.Name, options.PVC.Name, pv.Spec.Local.Path)
 
 	if result.migratedVolume {
 		pv, err = p.translator.TranslateCSIPVToInTree(pv)
