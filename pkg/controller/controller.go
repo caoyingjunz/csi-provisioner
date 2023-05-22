@@ -1205,7 +1205,7 @@ func (p *csiProvisioner) Delete(ctx context.Context, volume *v1.PersistentVolume
 			return err
 		}
 	}
-
+	klog.V(2).Infof("migratedVolume", migratedVolume)
 	if volume.Spec.Local == nil {
 		return fmt.Errorf("invalid CSI LOCAL PV")
 	}
@@ -1225,13 +1225,14 @@ func (p *csiProvisioner) Delete(ctx context.Context, volume *v1.PersistentVolume
 		}
 	}
 
-	volumeId := p.volumeHandleToId(volume.Spec.CSI.VolumeHandle)
+	volumeId := p.volumeHandleToId(volume.Spec.Local.Path)
 
 	rc := &requiredCapabilities{}
 	if err := p.checkDriverCapabilities(rc); err != nil {
 		return err
 	}
 
+	klog.V(2).Infof("volumeId %s will be deleted", volumeId)
 	req := csi.DeleteVolumeRequest{
 		VolumeId: volumeId,
 	}
@@ -1247,7 +1248,6 @@ func (p *csiProvisioner) Delete(ctx context.Context, volume *v1.PersistentVolume
 	if err := p.canDeleteVolume(volume); err != nil {
 		return err
 	}
-
 	_, err = p.csiClient.DeleteVolume(deleteCtx, &req)
 
 	return err
@@ -1388,7 +1388,12 @@ func (p *csiProvisioner) volumeIdToHandle(id string) string {
 }
 
 func (p *csiProvisioner) volumeHandleToId(handle string) string {
-	return handle
+	parts := strings.Split(handle, "/")
+	if len(parts) == 0 {
+		return ""
+	}
+
+	return parts[len(parts)-1]
 }
 
 // checkNode optionally checks whether the PVC is assigned to the current node.
