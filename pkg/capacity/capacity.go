@@ -26,7 +26,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/caoyingjunz/csi-driver-provisioner/pkg/capacity/topology"
+	"github.com/caoyingjunz/csi-provisioner/pkg/capacity/topology"
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"google.golang.org/grpc"
 	v1 "k8s.io/api/core/v1"
