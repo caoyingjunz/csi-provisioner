@@ -1,4 +1,4 @@
-module github.com/caoyingjunz/csi-driver-provisioner
+module github.com/caoyingjunz/csi-provisioner
 
 go 1.17
 
