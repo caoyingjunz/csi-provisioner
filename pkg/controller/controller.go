@@ -1188,12 +1188,13 @@ func (p *csiProvisioner) getSnapshotSource(ctx context.Context, claim *v1.Persis
 
 func (p *csiProvisioner) Delete(ctx context.Context, volume *v1.PersistentVolume) error {
 	if volume == nil {
-		return fmt.Errorf("invalid CSI PV")
+		return fmt.Errorf("invalid CSI LOCAL PV")
 	}
 
 	var err error
 	var migratedVolume bool
 	if p.translator.IsPVMigratable(volume) {
+		klog.V(2).Infof("TranslateInTreePVToCSI")
 		// we end up here only if CSI migration is enabled in-tree (both overall
 		// and for the specific plugin that is migratable) causing in-tree PV
 		// controller to yield deletion of PVs with in-tree source to external provisioner
@@ -1205,8 +1206,8 @@ func (p *csiProvisioner) Delete(ctx context.Context, volume *v1.PersistentVolume
 		}
 	}
 
-	if volume.Spec.CSI == nil {
-		return fmt.Errorf("invalid CSI PV")
+	if volume.Spec.Local == nil {
+		return fmt.Errorf("invalid CSI LOCAL PV")
 	}
 
 	// If we run on a single node, then we shouldn't delete volumes
