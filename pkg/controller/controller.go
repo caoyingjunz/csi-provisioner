@@ -1188,12 +1188,13 @@ func (p *csiProvisioner) getSnapshotSource(ctx context.Context, claim *v1.Persis
 
 func (p *csiProvisioner) Delete(ctx context.Context, volume *v1.PersistentVolume) error {
 	if volume == nil {
-		return fmt.Errorf("invalid CSI PV")
+		return fmt.Errorf("invalid CSI LOCAL PV")
 	}
 
 	var err error
 	var migratedVolume bool
 	if p.translator.IsPVMigratable(volume) {
+		klog.V(2).Infof("TranslateInTreePVToCSI")
 		// we end up here only if CSI migration is enabled in-tree (both overall
 		// and for the specific plugin that is migratable) causing in-tree PV
 		// controller to yield deletion of PVs with in-tree source to external provisioner
@@ -1204,9 +1205,9 @@ func (p *csiProvisioner) Delete(ctx context.Context, volume *v1.PersistentVolume
 			return err
 		}
 	}
-
-	if volume.Spec.CSI == nil {
-		return fmt.Errorf("invalid CSI PV")
+	klog.V(2).Infof("migratedVolume", migratedVolume)
+	if volume.Spec.Local == nil {
+		return fmt.Errorf("invalid CSI LOCAL PV")
 	}
 
 	// If we run on a single node, then we shouldn't delete volumes
@@ -1224,13 +1225,14 @@ func (p *csiProvisioner) Delete(ctx context.Context, volume *v1.PersistentVolume
 		}
 	}
 
-	volumeId := p.volumeHandleToId(volume.Spec.CSI.VolumeHandle)
+	volumeId := p.volumeHandleToId(volume.Spec.Local.Path)
 
 	rc := &requiredCapabilities{}
 	if err := p.checkDriverCapabilities(rc); err != nil {
 		return err
 	}
 
+	klog.V(2).Infof("volumeId %s will be deleted", volumeId)
 	req := csi.DeleteVolumeRequest{
 		VolumeId: volumeId,
 	}
@@ -1246,7 +1248,6 @@ func (p *csiProvisioner) Delete(ctx context.Context, volume *v1.PersistentVolume
 	if err := p.canDeleteVolume(volume); err != nil {
 		return err
 	}
-
 	_, err = p.csiClient.DeleteVolume(deleteCtx, &req)
 
 	return err
@@ -1387,7 +1388,12 @@ func (p *csiProvisioner) volumeIdToHandle(id string) string {
 }
 
 func (p *csiProvisioner) volumeHandleToId(handle string) string {
-	return handle
+	parts := strings.Split(handle, "/")
+	if len(parts) == 0 {
+		return ""
+	}
+
+	return parts[len(parts)-1]
 }
 
 // checkNode optionally checks whether the PVC is assigned to the current node.
